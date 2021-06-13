@@ -1,14 +1,16 @@
 import createSpiral from './createSpiral';
 
+// ________________0_______1_______2_______3_______4_______5_______6_______7_____
+// ________________..._____..1_____.1._____.11_____1.._____1.1_____11._____111___
 const palette = ['#000', '#222', '#333', '#555', '#777', '#999', '#bbb', '#fff'];
-const reveal = [0];
-const batch = 1000;
+const reveal = [1, 2, 4];
+const batch = 500;
 
 const channels = [0, 1, 2] as const;
 
 const canvas = document.querySelector('canvas');
 const image = new Image();
-image.src = '/in/nelle1.jpg';
+image.src = '/in/nelle.jpg';
 image.onload = () => {
   const { width, height } = image;
   canvas.width = width;
@@ -26,9 +28,10 @@ image.onload = () => {
     imageData,
     channel,
     stopAt: 0.8,
-    kind: 'looped',
-    divider: 5,
-    multiplier: 5,
+    kind: 'compressed',
+    divider: 8,
+    multiplier: 4,
+    quality: 5,
   }));
 
   const drawn = new Uint8Array(3 * width * height);

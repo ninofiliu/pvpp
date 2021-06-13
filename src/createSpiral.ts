@@ -21,6 +21,11 @@ type SpiralParams = {
     divider: number;
     /** starting at 1 */
     multiplier: number;
+  } | {
+    kind: 'compressed';
+    divider: number;
+    multiplier: number;
+    quality: number;
   }
 );
 
@@ -38,6 +43,7 @@ export default (params: SpiralParams) => {
       case 'basic': return (l: number) => l < params.treshold;
       case 'linear': return (l: number, i: number) => l < (i / params.divider);
       case 'looped': return (l: number, i: number) => ((l * params.multiplier) % 1) < (i / params.divider);
+      case 'compressed': return (l: number, i: number) => (((Math.floor(l * params.quality) / params.quality) * params.multiplier) % 1) < (i / params.divider);
     }
   })();
 
