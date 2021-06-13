@@ -12,3 +12,8 @@ plugins:
 rules:
   no-plusplus: off
   no-restricted-syntax: off
+  default-case: off
+  consistent-return: off
+  max-len: off
+  import/no-unresolved: off
+  import/extensions: off

@@ -1,101 +1,47 @@
-type SpiralParams = {
-  ctx: CanvasRenderingContext2D;
-  width: number;
-  height: number;
-  imageData: ImageData;
-  colorChannel: 0 | 1 | 2;
-  /** between 0 and 1 */
-  stopAt: number;
-} & (
-  | {
-    kind: 'basic';
-    /** between 0 and 1 */
-    treshold: number;
-  }
-  | {
-    kind: 'linear';
-    /** starting at 1 */
-    divider: number;
-  }
-  | {
-    kind: 'looped';
-    /** starting at 1 */
-    divider: number;
-    /** starting at 1 */
-    multiplier: number;
-  }
-);
+import createSpiral from './createSpiral';
 
-export default (params: SpiralParams) => {
-  const state = {
-    x: Math.floor(params.width / 2),
-    y: Math.floor(params.height / 2),
-    done: false,
+const channels = [0, 1, 2] as const;
+
+const canvas = document.querySelector('canvas');
+const image = new Image();
+image.src = '/in/nelle.jpg';
+image.onload = () => {
+  const { width, height } = image;
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(image, 0, 0);
+  const imageData = ctx.getImageData(0, 0, width, height);
+  ctx.filter = 'grayscale(100%)';
+  ctx.drawImage(image, 0, 0);
+  ctx.filter = 'grayscale(0%)';
+
+  const spirals = channels.map((channel) => createSpiral({
+    ctx,
+    imageData,
+    channel,
+    stopAt: 0.5,
+    kind: 'looped',
+    divider: 10,
+    multiplier: 3,
+  }));
+
+  const palette = ['#000', '#00f', '#0f0', '#0ff', '#f00', '#f0f', '#ff0', '#fff'];
+  const drawn = new Uint8Array(3 * width * height);
+
+  const loop = () => {
+    for (let i = 0; i < 500; i++) {
+      for (const channel of channels) {
+        const spiral = spirals[channel];
+        if (spiral.done) return;
+        spiral.move();
+        const n = 3 * (width * spiral.y + spiral.x);
+        ctx.fillStyle = palette[4 * drawn[n] + 2 * drawn[n + 1] + drawn[n + 2]];
+        ctx.fillRect(spiral.x, spiral.y, 1, 1);
+        drawn[n + channel] = 1;
+      }
+    }
+    requestAnimationFrame(loop);
   };
-
-  const stopFn = (() => {
-    switch (params.kind) {
-      case 'basic': return (l: number) => l < params.treshold;
-      case 'linear': return (l: number, i: number) => l < (i / params.divider);
-      case 'looped': return (l: number, i: number) => ((l * params.multiplier) % 1) < (i / params.divider);
-    }
-  })();
-
-  const createMatrix = (fn) => (new Array(params.width)).fill(null).map((_, x) => (
-    (new Array(params.height)).fill(null).map((__, y) => (
-      fn(x, y)
-    ))
-  ));
-
-  const src = createMatrix((x, y) => params.imageData.data[4 * (params.width * y + x) + params.colorChannel] / 256);
-  const drawn = createMatrix(() => false);
-
-  const isInCanvas = ({ x, y }) => x >= 0 && x < params.width && y >= 0 && y < params.height;
-
-  function* spiralPositions() {
-    const spiralPosition = {
-      x: state.x,
-      y: state.y,
-    };
-    for (let l = 1; l < Math.max(params.width, params.height); l += 2) {
-      for (let i = 0; i < l; i++) {
-        spiralPosition.x++;
-        if (isInCanvas(spiralPosition)) yield spiralPosition;
-      }
-      for (let i = 0; i < l; i++) {
-        spiralPosition.y++;
-        if (isInCanvas(spiralPosition)) yield spiralPosition;
-      }
-      for (let i = 0; i < l + 1; i++) {
-        spiralPosition.x--;
-        if (isInCanvas(spiralPosition)) yield spiralPosition;
-      }
-      for (let i = 0; i < l + 1; i++) {
-        spiralPosition.y--;
-        if (isInCanvas(spiralPosition)) yield spiralPosition;
-      }
-    }
-  }
-
-  let nbDrawn = 0;
-  const move = () => {
-    let i = 0;
-    for (const spiralPosition of spiralPositions()) {
-      i++;
-      const { x, y } = spiralPosition;
-      if (!drawn[x][y]) {
-        if (stopFn(src[x][y], i)) {
-          state.x = x;
-          state.y = y;
-          drawn[x][y] = true;
-          nbDrawn++;
-          if (nbDrawn > params.width * params.height * params.stopAt) state.done = true;
-          return;
-        }
-      }
-    }
-    state.done = true;
-  };
-
-  return Object.assign(state, { move });
+  loop();
 };
