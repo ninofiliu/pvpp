@@ -1,4 +1,7 @@
 {
   "include": ["src"],
-  "compilerOptions": {}
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM"],
+    "downlevelIteration": true
+  }
 }
