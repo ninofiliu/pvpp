@@ -5,12 +5,13 @@ import createSpiral from './createSpiral';
 const palette = ['#f00', '#000', '#222', '#444', '#666', '#999', '#bbb', '#fff'];
 const reveal = [];
 const batch = 2000;
+const record = false;
 
 const channels = [0, 1, 2] as const;
 
 const canvas = document.querySelector('canvas');
 const image = new Image();
-image.src = '/in/gaby3.jpg';
+image.src = '/in/hand1.png';
 image.onload = () => {
   const { width, height } = image;
   canvas.width = width;
@@ -30,11 +31,21 @@ image.onload = () => {
     stopAt: 0.8,
     kind: 'compressed',
     divider: 15,
-    multiplier: 8,
-    quality: 5,
+    multiplier: 1,
+    quality: 100,
   }));
 
   const drawn = new Uint8Array(3 * width * height);
+
+  let recorder: any;
+  if (record) {
+    // @ts-ignore
+    recorder = new MediaRecorder(canvas.captureStream(), { mimeType: 'video/webm' });
+    recorder.start();
+    recorder.addEventListener('dataavailable', (evt) => {
+      document.querySelector('video').src = URL.createObjectURL(evt.data);
+    });
+  }
 
   let paused = false;
   const loop = () => {
@@ -66,6 +77,8 @@ image.onload = () => {
           paused = true;
         }
         break;
+      case 's':
+        recorder?.stop();
     }
   });
   loop();
